@@ -1,0 +1,14 @@
+{
+    "app": {
+        "name": "go-ws",
+        "host": "localhost",
+        "port": "5000",
+        "secret": "change this to random string"
+    },
+    "database": {
+        "url": "mongodb://127.0.0.1:27017",
+        "name": "db_name",
+        "username": "please fill username if your database use auth",
+        "password": "please fill password if your database use auth"
+    }
+}
