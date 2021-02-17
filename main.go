@@ -1,15 +1,14 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
+	"gowithmongo/database"
 	mdl "gowithmongo/middleware"
 	"gowithmongo/src/modules/auth"
 	"gowithmongo/src/modules/user"
 	"net/http"
 	"os"
-	"time"
 
 	_ "gowithmongo/docs"
 	"gowithmongo/seeder"
@@ -19,8 +18,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/viper"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 func init() {
@@ -33,52 +30,13 @@ func init() {
 
 }
 
-// ConnectDB init function for database
-func ConnectDB() *mongo.Database {
-	// init database
-	dbURL := viper.GetString(`database.url`)
-	dbName := viper.GetString(`database.name`)
-	dbUser := viper.GetString(`database.username`)
-
-	option := options.Client().ApplyURI(dbURL)
-	if len(dbUser) != 0 {
-		dbPass := viper.GetString(`database.password`)
-		credential := options.Credential{
-			AuthSource: dbName,
-			Username:   dbUser,
-			Password:   dbPass,
-		}
-		option = option.SetAuth(credential)
-	}
-	client, err := mongo.NewClient(option)
-	if err != nil {
-		panic(err)
-	}
-
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	err = client.Connect(ctx)
-	if err != nil {
-		panic(err)
-	}
-
-	err = client.Ping(ctx, readpref.Primary())
-	if err != nil {
-		panic(err)
-	}
-
-	db := client.Database(dbName)
-
-	return db
-}
-
-func handleArgs() {
+func handleArgs(db *mongo.Database) {
 	flag.Parse()
 	args := flag.Args()
 	if len(args) > 0 {
 		switch args[0] {
 		case "seed":
 			// seed users
-			db := ConnectDB()
 			seeder.SeedUser(*db)
 		default:
 			fmt.Println(`Available command: seed (command for seeding customer data)`)
@@ -102,7 +60,14 @@ func handleArgs() {
 // @host localhost:5000
 // @BasePath /
 func main() {
-	handleArgs()
+	// init database
+	dbURL := viper.GetString(`database.url`)
+	dbName := viper.GetString(`database.name`)
+	dbUser := viper.GetString(`database.username`)
+	dbPass := viper.GetString(`database.password`)
+	db := database.ConnectDB(dbURL, dbUser, dbPass, dbName)
+
+	handleArgs(db)
 
 	appName := viper.GetString(`app.name`)
 	appHost := viper.GetString(`app.host`)
@@ -110,12 +75,12 @@ func main() {
 
 	e := echo.New()
 	appMiddleware := mdl.InitAppMiddleware(appName)
+
 	e.Use(appMiddleware.CORS)
 
 	e.GET("/", hello)
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
-	db := ConnectDB()
 	auth.NewAuthHandler(e, *db)
 	user.NewUserHandler(e, *db)
 

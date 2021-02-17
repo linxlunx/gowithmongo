@@ -25,6 +25,12 @@ $ swag init
 $ go run main.go
 ```
 
+## Test
+Integration test with test database. The default database name for test database `is echo_db_test`. You can change it in config file.
+```
+$ go test ./... -v
+```
+
 ## Notes
 - Roles
     - User can only list or get by id

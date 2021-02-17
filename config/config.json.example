@@ -10,5 +10,13 @@
         "name": "db_name",
         "username": "please fill username if your database use auth",
         "password": "please fill password if your database use auth"
+    },
+    "test": {
+        "database": {
+            "url": "mongodb://127.0.0.1:27017",
+            "name": "echo_db_test",
+            "username": "",
+            "password": ""
+        }
     }
 }
